@@ -49,10 +49,28 @@ pub fn ComptimeArrayList(comptime T: type) type {
             defer self.deinit();
             return self.items;
         }
+
+        pub fn remove(self: *Self, comptime index: usize) void {
+            self.capacity -= 1;
+            var new_items: [self.capacity]T = undefined;
+
+            var i: usize = 0;
+            while (i < self.items.len) : (i += 1) {
+                if (i == index) {
+                    continue;
+                } else if (i > index) {
+                    new_items[i - 1] = self.items[i];
+                } else {
+                    new_items[i] = self.items[i];
+                }
+            }
+
+            self.items = &new_items;
+        }
     };
 }
 
-test "Comptime ArrayList" {
+test "ComptimeArrayList.append, ComptimeArrayList.appendSlice" {
     comptime {
         var list = ComptimeArrayList(u8).init();
         
@@ -68,5 +86,25 @@ test "Comptime ArrayList" {
         std.testing.expectEqualSlices(u8, &expected, list.toOwnedSlice());
         std.testing.expectEqual(list.capacity, 0);
         std.testing.expectEqualSlices(u8, &expected_empty, list.items);
+    }
+}
+
+test "ComptimeArrayList.remove" {
+    comptime {
+        var list = ComptimeArrayList(u8).init();
+
+        list.append('a');
+        list.append('b');
+        list.append('c');
+        list.append('d');
+        list.append('e');
+
+        list.remove(1);
+        list.remove(3);
+        list.remove(1);
+
+        var expected = [_]u8{'a', 'd'};
+
+        std.testing.expectEqualSlices(u8, &expected, list.toOwnedSlice());
     }
 }
